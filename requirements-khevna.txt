@@ -1,0 +1,20 @@
+# SmartWallet AI - Khevna's Backend & AI Dependencies
+# Python 3.10+
+
+# FastAPI Backend
+fastapi
+uvicorn
+pydantic
+
+# AWS Strands Agents SDK
+strands-agents[openai]
+
+# Akamai AI Inference
+openai
+
+# Environment Variables
+python-dotenv
+
+# Testing
+pytest
+httpx
