@@ -8,6 +8,10 @@ from models.schemas import (
 from agents.rewards_agent import explain_purchase
 import os
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from models.schemas import (
     PurchaseRequest,
     RecommendationResponse,
