@@ -1,0 +1,5 @@
+{
+  "merchant_id": "m_grocery",
+  "amount": 180.00,
+  "card_ids": ["card_a", "card_b", "card_c"]
+}

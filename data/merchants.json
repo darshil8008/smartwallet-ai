@@ -1,0 +1,8 @@
+[
+  {"id":"m_grocery","name":"Crossroads Grocer (Demo)","category":"groceries","mcc_status":"assumed","latitude":39.0997,"longitude":-94.5786},
+  {"id":"m_dining","name":"Downtown Kitchen (Demo)","category":"dining","mcc_status":"assumed","latitude":39.1004,"longitude":-94.5810},
+  {"id":"m_coffee","name":"Morning Cup (Demo)","category":"dining","mcc_status":"assumed","latitude":39.0986,"longitude":-94.5781},
+  {"id":"m_gas","name":"City Fuel (Demo)","category":"gas","mcc_status":"assumed","latitude":39.1040,"longitude":-94.5740},
+  {"id":"m_travel","name":"Terminal Hotel (Demo)","category":"travel","mcc_status":"assumed","latitude":39.1061,"longitude":-94.5851},
+  {"id":"m_other","name":"Neighborhood Books (Demo)","category":"other","mcc_status":"assumed","latitude":39.0976,"longitude":-94.5833}
+]
