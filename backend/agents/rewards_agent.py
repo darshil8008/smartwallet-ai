@@ -44,7 +44,7 @@ def create_rewards_agent() -> Agent:
         ),
         params={
             "temperature": 0,
-            "max_tokens": 600,
+            "max_tokens": 450,
         },
     )
 
