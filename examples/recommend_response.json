@@ -1,0 +1,10 @@
+{
+  "merchant": {"id": "m_grocery", "name": "Crossroads Grocer (Demo)", "category": "groceries", "mcc_status": "assumed"},
+  "best_card_id": "card_b",
+  "rankings": [
+    {"card_id": "card_b", "reward_usd": 5.40, "effective_rate": 0.03, "reason": "3% groceries; no category cap"},
+    {"card_id": "card_c", "reward_usd": 3.60, "effective_rate": 0.02, "reason": "2% on all purchases"},
+    {"card_id": "card_a", "reward_usd": 2.60, "effective_rate": 0.0144444444, "reason": "5% for $20 remaining under cap, then 1% for $160"}
+  ],
+  "assumptions": ["All merchants and card terms are synthetic", "Merchant category is assumed, not verified from the payment network"]
+}
