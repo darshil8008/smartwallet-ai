@@ -9,6 +9,10 @@ export type BonusRule = {
 export type Card = {
   id: string;
   name: string;
+  issuer?: string;
+  surface?: string;
+  ink?: string;
+  source_url?: string;
   network: string;
   last4: string;
   accent: string;
@@ -18,6 +22,9 @@ export type Card = {
   bonus_rules: BonusRule[];
 };
 export type Merchant = {
+  address?: string;
+  kind?: string;
+  source_url?: string;
   id: string;
   name: string;
   category: string;
@@ -115,11 +122,11 @@ export function normalizeCard(raw: CatalogCard, index = 0): Card {
   return {
     id: raw.id,
     name: raw.display_name.replace(/\s*\(Demo\)$/, ''),
-    network: 'DEMO',
+    network: 'CARD',
     last4: ['2048', '7731', '0916'][index % 3],
     accent: ['#8C7CFF', '#55D6BE', '#F2B66D'][index % 3],
     terms_label: [
-      ...rules.map(rule => percent(rule.rate) + ' ' + rule.category + (rule.cap_amount !== null ? ' up to ' + money(rule.cap_amount) + ' (' + (rule.period?.replace(/_/g, ' ') ?? 'demo period') + '), then ' + percent(raw.base_rate) : '')),
+      ...rules.map(rule => percent(rule.rate) + ' ' + rule.category + (rule.cap_amount !== null ? ' up to ' + money(rule.cap_amount) + ' (' + (rule.period?.replace(/_/g, ' ') ?? 'catalog period') + '), then ' + percent(raw.base_rate) : '')),
       percent(raw.base_rate) + ' on other purchases',
     ].join('; '),
     exclusions: [],
@@ -132,9 +139,9 @@ export function normalizeMerchant(raw: CatalogMerchant): Merchant {
   if (!raw.id || !raw.name || !raw.category) throw new Error('Unexpected merchant catalog format');
   return {
     id: raw.id, name: raw.name, category: category(raw.category),
-    mcc: 'unverified', neighborhood: 'Kansas City demo directory',
+    mcc: 'unverified', neighborhood: 'Kansas City directory',
     category_status: raw.mcc_status ?? 'assumed',
-    category_source: 'Demo directory; payment-network MCC not verified',
+    category_source: 'Business directory; payment-network MCC not verified',
   };
 }
 
@@ -156,7 +163,7 @@ export const DEMO_MERCHANTS = [
 export function convertCardForBackend(card: Card) {
   const baseRate = round(card.base_rate * 100);
   return {
-    card_id: card.id, card_name: card.name, issuer: 'Demo Issuer',
+    card_id: card.id, card_name: card.name, issuer: card.issuer ?? 'Selected issuer',
     reward_rules: [
       ...card.bonus_rules.map(rule => ({
         category: category(rule.category), cashback_rate: round(rule.rate * 100),
@@ -192,8 +199,8 @@ export function calculateRecommendation(merchant: Merchant, amount: number, card
     ranked_cards, demo: true,
     assumptions: [
       'Merchant category is assumed to be ' + category(merchant.category) + '; actual payment MCC is not verified.',
-      'Card terms, card ownership, activation, and category spend-to-date are hypothetical demo data.',
-      'Reward caps use the demo period specified in the catalog.',
+      cards.every(card => card.source_url) ? 'Estimates use published product benefits; card ownership and spending so far are assumed.' : 'Estimates use supplied illustrative benefits; ownership and spending so far are assumed.',
+      'Caps apply to the stated period; Citi estimates assume eligible payment. Issuer-only booking bonuses are excluded.',
       'Actual issuer exclusions and transaction coding can change rewards.',
     ],
   };

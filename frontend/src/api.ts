@@ -1,3 +1,5 @@
+import { WALLET_CARDS, NEARBY_MERCHANTS } from './catalog';
+export { WALLET_CARDS, NEARBY_MERCHANTS } from './catalog';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import {
@@ -30,21 +32,14 @@ async function request<T>(path: string, init?: RequestInit, timeoutMs = 15000): 
   }
 }
 
-export async function getCards() {
-  const result = await request<Parameters<typeof normalizeCard>[0][]>('/api/cards');
-  if (!Array.isArray(result.data) || result.data.length === 0) throw new Error('Card catalog is empty or invalid');
-  return { ...result, data: result.data.map(normalizeCard) };
-}
-export async function getMerchants() {
-  const result = await request<Parameters<typeof normalizeMerchant>[0][]>('/api/merchants');
-  if (!Array.isArray(result.data) || result.data.length === 0) throw new Error('Merchant catalog is empty or invalid');
-  return { ...result, data: result.data.map(normalizeMerchant) };
-}
+// Curated public products and real places; the server GET endpoints currently serve synthetic catalogs.
+export async function getCards() { return { data: WALLET_CARDS, offline: true }; }
+export async function getMerchants() { return { data: NEARBY_MERCHANTS, offline: true }; }
 // The deployed service has not documented a history schema; do not render unknown data.
 export async function getTransactions(): Promise<{ data: Transaction[]; offline: boolean }> {
-  throw new Error('Transaction history is local for this demo');
+  throw new Error('Transaction history is local for this session');
 }
-export async function getRecommendation(merchant: Merchant, amount: number, cards: Card[] = DEMO_CARDS): Promise<{ data: Recommendation; offline: boolean }> {
+export async function getRecommendation(merchant: Merchant, amount: number, cards: Card[] = WALLET_CARDS): Promise<{ data: Recommendation; offline: boolean }> {
   const purchase = buildPurchase(merchant, amount, cards);
   try {
     const result = await request<BackendRecommendation>('/api/recommend', {
@@ -52,11 +47,11 @@ export async function getRecommendation(merchant: Merchant, amount: number, card
     });
     return { ...result, data: normalizeRecommendation(result.data, merchant, amount, cards) };
   } catch (error) {
-    console.warn('Recommendation API failed; using local demo calculation.', error);
+    console.warn('Recommendation API failed; using local calculation.', error);
     return { offline: true, data: calculateRecommendation(merchant, amount, cards) };
   }
 }
-export async function getExplanation(merchant: Merchant, amount: number, _question?: string, recommendation?: Recommendation, cards: Card[] = DEMO_CARDS): Promise<{ data: Explanation; offline: boolean }> {
+export async function getExplanation(merchant: Merchant, amount: number, _question?: string, recommendation?: Recommendation, cards: Card[] = WALLET_CARDS): Promise<{ data: Explanation; offline: boolean }> {
   const purchase = buildPurchase(merchant, amount, cards);
   try {
     const result = await request<BackendExplanation>('/api/agent/explain', {
@@ -75,7 +70,7 @@ export async function getExplanation(merchant: Merchant, amount: number, _questi
     return { offline: true, data: localExplanation(recommendation ?? calculateRecommendation(merchant, amount, cards)) };
   }
 }
-export async function saveTransaction(merchant: Merchant, card: Card, amount: number, cards: Card[] = DEMO_CARDS, recommendation?: Recommendation): Promise<{ data: Transaction; offline: boolean }> {
+export async function saveTransaction(merchant: Merchant, card: Card, amount: number, cards: Card[] = WALLET_CARDS, recommendation?: Recommendation): Promise<{ data: Transaction; offline: boolean }> {
   // Keep simulated purchases on-device; the new API does not document a save endpoint.
   const comparison = recommendation ?? calculateRecommendation(merchant, amount, cards);
   const ranking = comparison.ranked_cards.find(item => item.card.id === card.id);

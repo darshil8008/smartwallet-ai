@@ -19,6 +19,7 @@ function compile(name, dependencies = {}) {
   return { context, exports: module.exports };
 }
 const contracts = compile('contracts').exports;
+const catalog = compile('catalog').exports;
 const cards = contracts.DEMO_CARDS;
 const merchant = contracts.DEMO_MERCHANTS[0];
 const plain = value => JSON.parse(JSON.stringify(value));
@@ -33,6 +34,7 @@ const liveRanking = {
 function apiHarness() {
   return compile('api', {
     './contracts': contracts,
+    './catalog': catalog,
     'react-native': { Platform: { OS: 'web' } },
     'expo-constants': { default: { expoConfig: {}, isDevice: false } },
   });
@@ -53,7 +55,7 @@ test('purchase converts decimal rates once, preserves caps, and supplies unmatch
 test('catalog supplies UI fields without claiming a verified MCC or real card network', () => {
   const card = contracts.normalizeCard({ id: 'x', display_name: 'Example (Demo)', base_rate: .0175, bonus_rules: [] });
   assert.equal(card.name, 'Example');
-  assert.equal(card.network, 'DEMO');
+  assert.equal(card.network, 'CARD');
   assert.equal(contracts.convertCardForBackend(card).reward_rules[0].cashback_rate, 1.75);
   assert.equal(contracts.normalizeMerchant({ id: 'x', name: 'Example', category: 'grocery' }).category, 'groceries');
   assert.equal(merchant.mcc, 'unverified');
@@ -144,4 +146,35 @@ test('saved comparisons remain historical snapshots while insights use the curre
   assert.equal(walletState.spendingInsights([saved], [])[0].next, null);
   assert.equal(walletState.spendingInsights([], cards).length, 0);
   assert.equal(walletState.rewardSummary([saved, second]).extra, 3.2);
+});
+
+
+test('published products rank groceries, dining and books and preserve issuer identities', () => {
+  const products = catalog.WALLET_CARDS, market = catalog.NEARBY_MERCHANTS[0];
+  assert.equal(products.length, 4);
+  assert.equal(contracts.calculateRecommendation(market, 180, products).best_card.id, 'amex-blue-cash-everyday');
+  assert.equal(contracts.calculateRecommendation(market, 180, products).estimated_cashback, 5.4);
+  assert.equal(contracts.calculateRecommendation(catalog.NEARBY_MERCHANTS[1], 20, products).best_card.id, 'chase-freedom-unlimited');
+  assert.equal(contracts.calculateRecommendation(catalog.NEARBY_MERCHANTS[7], 20, products).best_card.id, 'citi-double-cash');
+  const request = contracts.buildPurchase(market, 180, products);
+  assert.equal(request.cards[0].issuer, 'American Express');
+  assert.equal(request.cards[0].reward_rules[0].cashback_rate, 3);
+  assert.equal(request.cards[0].reward_rules[0].spending_cap, 6000);
+  assert.equal(request.cards[2].reward_rules[0].cashback_rate, 1.5);
+  assert.ok(products[3].terms_label.includes('when paying'));
+});
+test('real-product cap usage switches the winner without changing published rates', () => {
+  const products = walletState.walletCards(catalog.WALLET_CARDS, [], { 'amex-blue-cash-everyday': { groceries: 5980 } });
+  const result = contracts.calculateRecommendation(catalog.NEARBY_MERCHANTS[0], 180, products);
+  assert.equal(result.best_card.id, 'citi-double-cash');
+  assert.equal(result.ranked_cards.find(row => row.card.id === 'amex-blue-cash-everyday').estimated_cashback, 2.2);
+});
+test('curated presentation catalogs cannot be overwritten by the synthetic GET catalogs', async () => {
+  const { context, exports: api } = apiHarness();
+  context.fetch = async () => { throw new Error('Unexpected catalog request'); };
+  assert.equal((await api.getCards()).data.length, 4);
+  const places = (await api.getMerchants()).data;
+  assert.ok(places.length <= 10);
+  assert.ok(places.every(place => place.address && place.source_url && place.category_status === 'assumed'));
+  assert.ok(!JSON.stringify(catalog).match(/demo/i));
 });

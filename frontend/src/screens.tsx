@@ -1,3 +1,4 @@
+import { CardFace } from './CardFace';
 import React, { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Card, Merchant, Transaction } from './contracts';
@@ -58,11 +59,11 @@ export function InsightsScreen({ transactions, cards, onPlan, onActivity }: { tr
     )}
     <View style={s.sectionHeading}><Text accessibilityRole="header" style={s.heading}>Benefits in your wallet</Text></View>
     {cards.length ? cards.map(card => <View key={card.id} style={s.panel}>
-      <View style={s.row}><View style={[s.swatch, { backgroundColor: card.accent }]} /><Text style={s.heading}>{card.name}</Text></View>
+      <CardFace card={card} compact />
       <Text style={s.body}>{card.terms_label}</Text>
-      {card.bonus_rules.filter(rule => rule.cap_amount !== null).map(rule => <Text key={rule.category} style={s.caption}>{money(Math.max(0, (rule.cap_amount ?? 0) - rule.spent_to_date))} of bonus-eligible {rule.category} spending remains in the demo cap period.</Text>)}
+      {card.bonus_rules.filter(rule => rule.cap_amount !== null).map(rule => <Text key={rule.category} style={s.caption}>{money(Math.max(0, (rule.cap_amount ?? 0) - rule.spent_to_date))} of bonus-eligible {rule.category} spending remains in the current cap period.</Text>)}
     </View>) : <Text style={s.body}>Your wallet is empty. Add supported cards in Profile.</Text>}
-    <Footnote>These are hypothetical catalog benefits, not live issuer deals. Planning suggestions are calculated locally from saved purchases; they do not predict future offers or verify a merchant's payment category.</Footnote>
+    <Footnote>Benefits use published product terms, not personalized issuer offers. Planning suggestions are calculated locally from saved purchases; they do not predict future offers or verify a merchant's payment category.</Footnote>
   </>;
 }
 
@@ -74,13 +75,13 @@ export function ProfileScreen({ catalog, cards, onToggle, onSpend }: { catalog: 
     {catalog.map(card => {
       const owned = selected.has(card.id);
       return <View key={card.id} style={[s.panel, owned && s.selectedPanel]}>
-        <View style={s.row}><View style={[s.swatch, { backgroundColor: card.accent }]} /><Text style={s.heading}>{card.name}</Text></View>
+        <CardFace card={card} compact />
         <Text style={s.body}>{card.terms_label}</Text>
         <Action title={owned ? 'Remove from wallet' : 'Add to wallet'} onPress={() => onToggle(card.id)} secondary />
         {owned ? card.bonus_rules.filter(rule => rule.cap_amount !== null).map(rule => <View key={rule.category} style={s.capEditor}>
           <Text style={s.label}>Assumed {rule.category} spending so far</Text>
           <View style={s.inputRow}><Text style={s.body}>$</Text><CapInput value={rule.spent_to_date} label={card.name + " assumed " + rule.category + " spending"} onCommit={value => onSpend(card.id, rule.category, value)} /></View>
-          <Text style={s.caption}>Cap: {money(rule.cap_amount ?? 0)} · {rule.period?.replace(/_/g, ' ') ?? 'demo period'}. Saving a matching simulated purchase on this card updates this spending amount.</Text>
+          <Text style={s.caption}>Cap: {money(rule.cap_amount ?? 0)} · {rule.period?.replace(/_/g, ' ') ?? 'current period'}. Saving a matching simulated purchase on this card updates this spending amount.</Text>
         </View>) : null}
       </View>;
     })}

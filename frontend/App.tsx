@@ -1,3 +1,4 @@
+import { CardFace } from './src/CardFace';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityScreen, InsightsScreen, ProfileScreen } from './src/screens';
 import { SpendOverrides, walletCards, recordPurchaseSpend } from './src/walletState';
@@ -16,8 +17,8 @@ import {
 } from 'react-native';
 import {
   Card,
-  DEMO_CARDS,
-  DEMO_MERCHANTS,
+  WALLET_CARDS,
+  NEARBY_MERCHANTS,
   getCards,
   getMerchants,
   getRecommendation,
@@ -48,13 +49,13 @@ const percent = (rate: number) => `${(rate * 100).toFixed(rate * 100 % 1 === 0 ?
 
 export default function App() {
   const [tab, setTab] = useState<'wallet' | 'activity' | 'insights' | 'profile'>('wallet');
-  const [catalog, setCatalog] = useState<Card[]>(DEMO_CARDS);
+  const [catalog, setCatalog] = useState<Card[]>(WALLET_CARDS);
   const [removedIds, setRemovedIds] = useState<string[]>([]);
   const [spendOverrides, setSpendOverrides] = useState<SpendOverrides>({});
   const profileCards = useMemo(() => walletCards(catalog, [], spendOverrides), [catalog, spendOverrides]);
   const cards = useMemo(() => walletCards(catalog, removedIds, spendOverrides), [catalog, removedIds, spendOverrides]);
-  const [merchants, setMerchants] = useState<Merchant[]>(DEMO_MERCHANTS);
-  const [selectedMerchantId, setSelectedMerchantId] = useState(DEMO_MERCHANTS[0].id);
+  const [merchants, setMerchants] = useState<Merchant[]>(NEARBY_MERCHANTS);
+  const [selectedMerchantId, setSelectedMerchantId] = useState(NEARBY_MERCHANTS[0].id);
   const [amountText, setAmountText] = useState('180');
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
   const [explanation, setExplanation] = useState<Explanation | null>(null);
@@ -68,7 +69,7 @@ export default function App() {
   const explanationRequest = useRef(0);
 
   const merchant = useMemo(
-    () => merchants.find((item) => item.id === selectedMerchantId) ?? DEMO_MERCHANTS[0],
+    () => merchants.find((item) => item.id === selectedMerchantId) ?? NEARBY_MERCHANTS[0],
     [merchants, selectedMerchantId],
   );
   const amount = Math.min(10000, Math.max(1, Number.parseFloat(amountText) || 180));
@@ -81,16 +82,16 @@ export default function App() {
       let connected = false;
       if (cardResult.status === 'fulfilled') {
         setCatalog(cardResult.value.data);
-        connected = true;
+        connected = connected || !cardResult.value.offline;
       }
       if (merchantResult.status === 'fulfilled') {
         setMerchants(merchantResult.value.data);
         setSelectedMerchantId(current => merchantResult.value.data.some(item => item.id === current) ? current : merchantResult.value.data[0].id);
-        connected = true;
+        connected = connected || !merchantResult.value.offline;
       }
       if (transactionResult.status === 'fulfilled') {
         setTransactions(transactionResult.value.data);
-        connected = true;
+        connected = connected || !transactionResult.value.offline;
       }
       setOffline(!connected);
     });
@@ -118,7 +119,7 @@ export default function App() {
     return () => { alive = false; clearTimeout(timer); };
   }, [merchant, amount, cards]);
 
-  const selectedCard = recommendation?.best_card ?? cards[0] ?? DEMO_CARDS[0];
+  const selectedCard = recommendation?.best_card ?? cards[0] ?? WALLET_CARDS[0];
 
   const handleSave = async () => {
     if (!recommendation || !cards.length || loading) return;
@@ -154,7 +155,7 @@ export default function App() {
           </View>
           <View style={[styles.connectionPill, offline ? styles.connectionOffline : styles.connectionOnline]}>
             <View style={[styles.connectionDot, { backgroundColor: offline ? C.amber : C.green }]} />
-            <Text style={[styles.connectionText, { color: offline ? C.amber : C.green }]}>{offline ? 'DEMO MODE' : 'API LIVE'}</Text>
+            <Text style={[styles.connectionText, { color: offline ? C.amber : C.green }]}>{offline ? 'ON DEVICE' : 'CONNECTED'}</Text>
           </View>
         </View>
 
@@ -166,13 +167,13 @@ export default function App() {
               <View style={styles.hero}>
                 <Text style={styles.eyebrow}>YOUR WALLET, WITH A GAME PLAN</Text>
                 <Text style={styles.title}>Make every{ '\n' }tap count.</Text>
-                <Text style={styles.subtitle}>The right card for the place you’re at.</Text>
+                <Text style={styles.subtitle}>The right card for your next stop.</Text>
               </View>
 
               <View style={styles.sectionHeader}>
                 <View>
-                  <Text style={styles.sectionTitle}>Nearby merchants</Text>
-                  <Text style={styles.sectionHint}>Choose a demo location</Text>
+                  <Text style={styles.sectionTitle}>Places around you</Text>
+                  <Text style={styles.sectionHint}>Around 330 W 9th St</Text>
                 </View>
                 <View style={styles.locationBadge}><Text style={styles.locationPin}>⌖</Text><Text style={styles.locationText}>KANSAS CITY</Text></View>
               </View>
@@ -182,7 +183,8 @@ export default function App() {
                   return (
                     <Pressable key={item.id} onPress={() => { setSelectedMerchantId(item.id); setNotice(''); }} style={[styles.merchantChip, active && styles.merchantChipActive]}>
                       <Text style={[styles.merchantChipName, active && styles.merchantChipNameActive]}>{item.name}</Text>
-                      <Text style={[styles.merchantChipCategory, active && styles.merchantChipCategoryActive]}>{item.category.toUpperCase()} · MCC {item.mcc}</Text>
+                      <Text style={[styles.merchantChipCategory, active && styles.merchantChipCategoryActive]}>{item.kind ?? item.category.toUpperCase()}</Text>
+                      <Text style={styles.merchantChipCategory}>{item.address}</Text>
                     </Pressable>
                   );
                 })}
@@ -191,14 +193,14 @@ export default function App() {
               <View style={styles.purchaseRow}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.sectionTitle}>Purchase amount</Text>
-                  <Text style={styles.sectionHint}>Try $180 to see a reward cap change the winner</Text>
+                  <Text style={styles.sectionHint}>Compare your next purchase</Text>
                 </View>
                 <View style={styles.amountField}><Text style={styles.amountCurrency}>$</Text><TextInput value={amountText} onChangeText={(value) => setAmountText(value.replace(/[^0-9.]/g, '').slice(0, 8))} keyboardType="decimal-pad" selectTextOnFocus style={styles.amountInput} accessibilityLabel="Purchase amount in dollars" /></View>
               </View>
 
               <View style={styles.recommendHeader}>
                 <View>
-                  <Text style={styles.sectionTitle}>Best actual value</Text>
+                  <Text style={styles.sectionTitle}>Best estimated value</Text>
                   <Text style={styles.sectionHint}>{merchant.neighborhood}</Text>
                 </View>
                 <View style={styles.edgeTag}><View style={styles.edgeDot} /><Text style={styles.edgeTagText}>MCC ASSUMED</Text></View>
@@ -209,16 +211,7 @@ export default function App() {
                   opacity: cardMotion,
                   transform: [{ translateY: cardMotion.interpolate({ inputRange: [0.84, 1], outputRange: [12, 0] }) }, { scale: cardMotion }],
                 }]}>
-                  <View style={styles.cardTopLine}>
-                    <View style={styles.cardBrandLockup}><View style={[styles.cardEmblem, { borderColor: selectedCard.accent }]}><Text style={[styles.cardEmblemText, { color: selectedCard.accent }]}>S</Text></View><Text style={styles.cardBank}>SMARTWALLET{ '\n' }DEMO CARD</Text></View>
-                    <View style={styles.bestBadge}><Text style={styles.bestBadgeText}>✦  BEST MATCH</Text></View>
-                  </View>
-                  <View style={[styles.cardGlow, { backgroundColor: selectedCard.accent }]} />
-                  <Text style={styles.cardName}>{selectedCard.name}</Text>
-                  <View style={styles.cardBottomLine}>
-                    <Text style={styles.cardNumber}>••••  ••••  ••••  {selectedCard.last4}</Text>
-                    <Text style={styles.cardNetwork}>{selectedCard.network}</Text>
-                  </View>
+                  <CardFace card={selectedCard} recommended />
                   <View style={styles.rewardStrip}>
                     <View><Text style={styles.rewardCaption}>ESTIMATED REWARD · {currency(amount)} SPEND</Text><Text style={styles.rewardAmount}>{currency(recommendation.estimated_cashback)} <Text style={styles.rewardAt}>· {percent(recommendation.ranked_cards[0]?.effective_rate ?? recommendation.reward_rate)} effective</Text></Text></View>
                     <View style={styles.rewardSpark}><Text style={styles.rewardSparkText}>↗</Text></View>
@@ -229,7 +222,7 @@ export default function App() {
               )}
 
               <View style={styles.rankingBlock}>
-                <View style={styles.rankingTitleRow}><Text style={styles.sectionTitle}>Reward ranking</Text><Text style={styles.demoNote}>DEMO CASH VALUE</Text></View>
+                <View style={styles.rankingTitleRow}><Text style={styles.sectionTitle}>Reward ranking</Text><Text style={styles.estimateNote}>ESTIMATED VALUE</Text></View>
                 {(recommendation?.ranked_cards ?? []).map((item, index) => (
                   <View key={item.card.id} style={styles.rankRow}>
                     <Text style={[styles.rankNumber, index === 0 && { color: C.green }]}>{String(index + 1).padStart(2, '0')}</Text>
@@ -259,7 +252,7 @@ export default function App() {
               <Pressable onPress={handleSave} disabled={saving || loading || !recommendation} style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed, (saving || loading || !recommendation) && styles.buttonDisabled]}>
                 {saving ? <ActivityIndicator color={C.background} /> : <><Text style={styles.primaryButtonText}>Use this card</Text><Text style={styles.primaryButtonArrow}>↗</Text></>}
               </Pressable>
-              <Text style={styles.disclaimer}>Illustrative estimate only · no payment is processed · terms are hypothetical</Text>
+              <Text style={styles.disclaimer}>Reward estimate only · no payment is processed</Text>
             </>
           ) : tab === 'activity' ? (
             <ActivityScreen transactions={transactions} onWallet={() => setTab('wallet')} />
@@ -361,7 +354,7 @@ const styles = StyleSheet.create({
   loadingCard: { height: 218, borderRadius: 19, backgroundColor: C.surface, justifyContent: 'center', alignItems: 'center', gap: 10 },
   rankingBlock: { marginTop: 22, marginBottom: 18 },
   rankingTitleRow: { flexWrap: 'wrap', gap: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  demoNote: { color: C.muted, fontSize: 13, letterSpacing: 0.8, fontWeight: '700' },
+  estimateNote: { color: C.muted, fontSize: 13, letterSpacing: 0.8, fontWeight: '700' },
   rankRow: { paddingVertical: 14, gap: 6, minHeight: 72, borderBottomWidth: 1, borderBottomColor: C.line, flexDirection: 'row', alignItems: 'center' },
   rankNumber: { width: 27, color: C.muted, fontSize: 13, fontWeight: '800' },
   rankSwatch: { width: 7, height: 7, borderRadius: 3, marginRight: 9 },
