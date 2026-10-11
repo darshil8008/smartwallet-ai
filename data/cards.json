@@ -1,0 +1,39 @@
+[
+  {
+    "id": "card_a",
+    "display_name": "BonusMax (Demo)",
+    "reward_type": "cashback",
+    "base_rate": 0.01,
+    "bonus_rules": [
+      {
+        "category": "groceries",
+        "rate": 0.05,
+        "cap_amount": 500.00,
+        "spent_to_date": 480.00,
+        "period": "demo_quarter"
+      }
+    ]
+  },
+  {
+    "id": "card_b",
+    "display_name": "GroceryPlus (Demo)",
+    "reward_type": "cashback",
+    "base_rate": 0.01,
+    "bonus_rules": [
+      {
+        "category": "groceries",
+        "rate": 0.03,
+        "cap_amount": null,
+        "spent_to_date": 0.00,
+        "period": "unlimited"
+      }
+    ]
+  },
+  {
+    "id": "card_c",
+    "display_name": "Everyday2 (Demo)",
+    "reward_type": "cashback",
+    "base_rate": 0.02,
+    "bonus_rules": []
+  }
+]
