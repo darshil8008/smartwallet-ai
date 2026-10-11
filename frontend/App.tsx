@@ -233,11 +233,6 @@ export default function App() {
                 ))}
               </View>
 
-              <View style={styles.assumptionCard}>
-                <Text style={styles.assumptionTitle}>ASSUMPTIONS TO CHECK</Text>
-                {(recommendation?.assumptions ?? []).map((item, index) => <Text key={index} style={styles.assumptionText}>{item}</Text>)}
-              </View>
-
               <Pressable onPress={handleExplain} disabled={explainBusy || loading || !recommendation} style={({ pressed }) => [styles.aiButton, pressed && styles.buttonPressed, (explainBusy || loading || !recommendation) && styles.buttonDisabled]}>
                 {explainBusy ? <ActivityIndicator color={C.purple} /> : <><Text style={styles.aiButtonGlyph}>✦</Text><Text style={styles.aiButtonText}>Ask SmartWallet AI why</Text><Text style={styles.aiButtonArrow}>↗</Text></>}
               </Pressable>
@@ -363,9 +358,6 @@ const styles = StyleSheet.create({
   rankDetail: { color: C.muted, fontSize: 14, lineHeight: 21, marginTop: 3 },
   rankResult: { maxWidth: 105, alignItems: 'flex-end', marginLeft: 5 },
   rankValue: { color: C.text, fontSize: 16, fontWeight: '800' },
-  assumptionCard: { backgroundColor: '#FFF8E9', borderColor: '#F1D9A8', borderWidth: 1, borderRadius: 13, padding: 12, marginBottom: 12 },
-  assumptionTitle: { color: C.amber, fontSize: 13, fontWeight: '900', letterSpacing: 1, marginBottom: 6 },
-  assumptionText: { color: '#6D6555', fontSize: 14, lineHeight: 22, marginTop: 3 },
   aiButton: { minHeight: 48, borderRadius: 13, backgroundColor: '#F0F0FF', borderWidth: 1, borderColor: '#D4D5FA', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 15, gap: 9, marginBottom: 12 },
   aiButtonGlyph: { color: C.purple, fontSize: 15 },
   aiButtonText: { color: '#454A9D', fontSize: 16, fontWeight: '800', flex: 1 },
