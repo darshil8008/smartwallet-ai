@@ -50,6 +50,7 @@ const percent = (rate: number) => `${(rate * 100).toFixed(rate * 100 % 1 === 0 ?
 export default function App() {
   const [tab, setTab] = useState<'wallet' | 'activity' | 'insights' | 'profile'>('wallet');
   const [catalog, setCatalog] = useState<Card[]>(WALLET_CARDS);
+  const [profile, setProfile] = useState({ name: 'Smit Patel', contact: '(202) 555-0148', email: 'smit@example.com' });
   const [removedIds, setRemovedIds] = useState<string[]>([]);
   const [spendOverrides, setSpendOverrides] = useState<SpendOverrides>({});
   const profileCards = useMemo(() => walletCards(catalog, [], spendOverrides), [catalog, spendOverrides]);
@@ -259,7 +260,7 @@ export default function App() {
               setTab('wallet');
             }} />
           ) : (
-            <ProfileScreen catalog={profileCards} cards={cards}
+            <ProfileScreen catalog={profileCards} cards={cards} profile={profile} onProfile={setProfile}
               onToggle={id => setRemovedIds(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id])}
               onSpend={(id, category, value) => setSpendOverrides(current => ({ ...current, [id]: { ...current[id], [category]: value } }))}
             />

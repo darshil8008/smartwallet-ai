@@ -35,3 +35,7 @@ Web needs backend CORS support for the localhost origin, OPTIONS, POST, and Cont
 ## Submission catalog sources (checked 2026-10-10)
 
 Source URLs are stored with each card and merchant in src/catalog.ts. Artwork is product-inspired native UI, not issuer-provided artwork. The selected address is fixed, not GPS-detected. Merchant categories remain assumed and payment MCCs are unverified. No payment or issuer-account connection is made.
+
+## Profile setup preview
+
+Profile starts with Smit Patel and sample contact information. A 64px initials avatar sits to the right of the Make it yours heading. Name, contact, and email live only in React session state and are excluded from every API request. The My cards + button opens a coming-soon form. Card name, number, expiry, and CVV are temporary component state only; submitting clears the entries and shows Card addition coming soon. Closing or leaving Profile discards the form. No new card, payment request, logging, or persistence is performed. Use sample input for the recording.

@@ -1,6 +1,6 @@
 import { CardFace } from './CardFace';
 import React, { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Card, Merchant, Transaction } from './contracts';
 import { rewardSummary, spendingInsights } from './walletState';
 
@@ -8,9 +8,15 @@ const color = { text: '#172B4D', muted: '#53657D', blue: '#2468C9', line: '#DBE4
 const money = (value: number) => '$' + value.toFixed(2);
 const rate = (value: number) => Number((value * 100).toFixed(2)) + '%';
 
-function Hero({ eyebrow, title, copy }: { eyebrow: string; title: string; copy: string }) {
-  return <View style={s.hero}><Text style={s.eyebrow}>{eyebrow}</Text><Text accessibilityRole="header" style={s.title}>{title}</Text><Text style={s.body}>{copy}</Text></View>;
+function Hero({ eyebrow, title, copy, avatar }: { eyebrow: string; title: string; copy: string; avatar?: string }) {
+  return <View style={s.hero}>
+    <View style={s.heroRow}><View style={s.heroCopy}><Text style={s.eyebrow}>{eyebrow}</Text><Text accessibilityRole="header" style={s.title}>{title}</Text></View>
+      {avatar ? <View accessibilityLabel="Profile initials" style={s.profileAvatar}><Text style={s.avatarInitials}>{avatar}</Text></View> : null}
+    </View>
+    <Text style={s.body}>{copy}</Text>
+  </View>;
 }
+
 function Action({ title, onPress, secondary = false, disabled = false }: { title: string; onPress: () => void; secondary?: boolean; disabled?: boolean }) {
   return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={({ pressed }) => [s.action, secondary && s.secondary, pressed && s.pressed, disabled && s.disabled]}><Text style={[s.actionText, secondary && s.secondaryText]}>{title}</Text></Pressable>;
 }
@@ -67,11 +73,25 @@ export function InsightsScreen({ transactions, cards, onPlan, onActivity }: { tr
   </>;
 }
 
-export function ProfileScreen({ catalog, cards, onToggle, onSpend }: { catalog: Card[]; cards: Card[]; onToggle: (id: string) => void; onSpend: (id: string, category: string, amount: number) => void }) {
+export type UserProfile = { name: string; contact: string; email: string };
+
+export function ProfileScreen({ catalog, cards, onToggle, onSpend, profile, onProfile }: { catalog: Card[]; cards: Card[]; onToggle: (id: string) => void; onSpend: (id: string, category: string, amount: number) => void; profile: UserProfile; onProfile: (profile: UserProfile) => void }) {
+  const [addOpen, setAddOpen] = useState(false);
   const selected = new Set(cards.map(card => card.id));
   return <>
-    <Hero eyebrow="YOUR WALLET, YOUR CHOICES" title="Make it yours." copy="Choose the supported cards you want SmartWallet to compare." />
-    <View style={s.sectionHeading}><Text accessibilityRole="header" style={s.heading}>My cards</Text><Text style={s.caption}>{cards.length} selected</Text></View>
+    <Hero eyebrow="YOUR WALLET, YOUR CHOICES" title="Make it yours." avatar={profile.name.trim().split(/\s+/).filter(Boolean).slice(0, 2).map(part => part.charAt(0)).join('').toUpperCase() || 'U'} copy="Choose the supported cards you want SmartWallet to compare." />
+    <View style={s.panel}>
+      <Text accessibilityRole="header" style={s.heading}>Your profile</Text>
+      <Text style={s.label}>Name</Text>
+      <TextInput accessibilityLabel="Profile name" style={s.profileInput} placeholder="Your name" placeholderTextColor={color.muted} value={profile.name} onChangeText={name => onProfile({ ...profile, name })} autoComplete="off" maxLength={80} />
+      <Text style={s.label}>Contact number</Text>
+      <TextInput accessibilityLabel="Profile contact number" style={s.profileInput} placeholder="Phone number" placeholderTextColor={color.muted} value={profile.contact} onChangeText={contact => onProfile({ ...profile, contact })} keyboardType="phone-pad" autoComplete="off" maxLength={30} />
+      <Text style={s.label}>Email</Text>
+      <TextInput accessibilityLabel="Profile email" style={s.profileInput} placeholder="you@example.com" placeholderTextColor={color.muted} value={profile.email} onChangeText={email => onProfile({ ...profile, email })} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoComplete="off" maxLength={160} />
+      <Text style={s.caption}>Profile details stay in this app session.</Text>
+    </View>
+    <View style={s.sectionHeading}><Text accessibilityRole="header" style={s.heading}>My cards</Text><View style={s.row}><Text style={s.caption}>{cards.length} selected</Text><Pressable accessibilityRole="button" accessibilityLabel="Add another card" onPress={() => setAddOpen(true)} style={({ pressed }) => [s.addButton, pressed && s.pressed]}><Text style={s.addSymbol}>+</Text></Pressable></View></View>
+    {addOpen ? <AddCardModal onClose={() => setAddOpen(false)} /> : null}
     {catalog.map(card => {
       const owned = selected.has(card.id);
       return <View key={card.id} style={[s.panel, owned && s.selectedPanel]}>
@@ -87,6 +107,33 @@ export function ProfileScreen({ catalog, cards, onToggle, onSpend }: { catalog: 
     })}
     <Footnote>Card selection and cap usage apply to Wallet, Insights, and both backend requests. Preferences last for this app session. No card number, CVV, or issuer password is needed.</Footnote>
   </>;
+}
+
+
+function AddCardModal({ onClose }: { onClose: () => void }) {
+  const [details, setDetails] = useState({ name: '', number: '', expiry: '', cvv: '' });
+  const [submitted, setSubmitted] = useState(false);
+  const clear = () => setDetails({ name: '', number: '', expiry: '', cvv: '' });
+  const close = () => { clear(); onClose(); };
+  return <Modal visible transparent animationType="fade" onRequestClose={close}>
+    <KeyboardAvoidingView style={s.modalBackdrop} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <View accessibilityViewIsModal style={s.modalPanel}>
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.modalContent}>
+          <View style={s.sectionHeading}><Text accessibilityRole="header" style={s.heading}>{submitted ? 'Coming soon' : 'Add a card'}</Text><Pressable accessibilityRole="button" accessibilityLabel="Close add card" onPress={close} style={s.addButton}><Text style={s.addSymbol}>{'\u00d7'}</Text></Pressable></View>
+          {submitted ? <><Text accessibilityLiveRegion="polite" style={s.body}>Card addition coming soon.</Text><Text style={s.caption}>Your entries were cleared. No card was added or saved.</Text><Action title="Done" onPress={close} /></> : <>
+            <Text style={s.caption}>Preview the upcoming card setup. Entries are discarded on submit or close. Use sample details.</Text>
+            <Text style={s.label}>Card name</Text><TextInput accessibilityLabel="New card name" style={s.profileInput} placeholder="Card product or nickname" placeholderTextColor={color.muted} value={details.name} onChangeText={name => setDetails({ ...details, name })} maxLength={80} autoComplete="off" />
+            <Text style={s.label}>Card number</Text><TextInput accessibilityLabel="New card number" style={s.profileInput} placeholder="0000 0000 0000 0000" placeholderTextColor={color.muted} value={details.number} onChangeText={number => setDetails({ ...details, number: number.replace(/[^0-9 ]/g, '').slice(0, 23) })} keyboardType="number-pad" autoComplete="off" autoCorrect={false} />
+            <View style={s.formRow}>
+              <View style={s.formColumn}><Text style={s.label}>Expiry</Text><TextInput accessibilityLabel="New card expiry" style={s.profileInput} placeholder="MM/YY" placeholderTextColor={color.muted} value={details.expiry} onChangeText={text => { const digits = text.replace(/[^0-9]/g, '').slice(0, 4); setDetails({ ...details, expiry: digits.length > 2 ? digits.slice(0, 2) + '/' + digits.slice(2) : digits }); }} keyboardType="number-pad" autoComplete="off" /></View>
+              <View style={s.formColumn}><Text style={s.label}>CVV</Text><TextInput accessibilityLabel="New card CVV" style={s.profileInput} placeholder="CVV" placeholderTextColor={color.muted} value={details.cvv} onChangeText={cvv => setDetails({ ...details, cvv: cvv.replace(/[^0-9]/g, '').slice(0, 4) })} keyboardType="number-pad" secureTextEntry autoComplete="off" autoCorrect={false} /></View>
+            </View>
+            <Action title="Add card" onPress={() => { clear(); setSubmitted(true); }} />
+          </>}
+        </ScrollView>
+      </View>
+    </KeyboardAvoidingView>
+  </Modal>;
 }
 
 
@@ -110,6 +157,18 @@ function CapInput({ value, label, onCommit }: { value: number; label: string; on
 }
 
 const s = StyleSheet.create({
+  profileInput: { minHeight: 48, borderWidth: 1, borderColor: color.line, borderRadius: 12, backgroundColor: "#F7FAFE", color: color.text, fontSize: 16, paddingHorizontal: 14, paddingVertical: 12 },
+  addButton: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#EAF2FF", alignItems: "center", justifyContent: "center" },
+  addSymbol: { color: color.blue, fontSize: 27, lineHeight: 32, fontWeight: "600" },
+  modalBackdrop: { flex: 1, backgroundColor: "rgba(17,35,60,0.5)", justifyContent: "center", padding: 20 },
+  modalPanel: { maxHeight: "90%", width: "100%", maxWidth: 480, alignSelf: "center", borderRadius: 22, backgroundColor: "#FFFFFF", overflow: "hidden" },
+  modalContent: { padding: 22, gap: 12 },
+  formRow: { flexDirection: "row", gap: 14 },
+  formColumn: { flex: 1, gap: 8 },
+  heroRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  heroCopy: { flex: 1, gap: 10 },
+  profileAvatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#2468C9', borderWidth: 3, borderColor: '#D8E7FB', alignItems: 'center', justifyContent: 'center' },
+  avatarInitials: { color: '#FFFFFF', fontSize: 24, fontWeight: '800', letterSpacing: .5 },
   hero: { paddingTop: 30, paddingBottom: 24, gap: 10 },
   eyebrow: { color: color.blue, fontSize: 13, lineHeight: 19, fontWeight: '800', letterSpacing: 0.8 },
   title: { color: color.text, fontSize: 34, lineHeight: 40, fontWeight: '800', letterSpacing: -1 },
