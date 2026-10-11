@@ -1,21 +1,21 @@
-.env
-.env.*
-!.env.example
-
+# Python
+__pycache__/
+*.py[cod]
 .venv/
 venv/
-__pycache__/
-*.pyc
 .pytest_cache/
+.env
+*.sqlite3
+*.db
 
+# Node / Expo
 node_modules/
 .expo/
 dist/
-build/
+web-build/
+frontend/.env
 
-*.db
-*.sqlite
-*.sqlite3
-
-.DS_Store
+# Editors / OS
 .vscode/
+.DS_Store
+Thumbs.db

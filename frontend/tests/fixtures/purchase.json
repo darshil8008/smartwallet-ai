@@ -1,0 +1,63 @@
+{
+  "merchant_name": "Crossroads Grocer (Demo)",
+  "category": "groceries",
+  "amount": 180,
+  "cards": [
+    {
+      "card_id": "card_a",
+      "card_name": "BonusMax",
+      "issuer": "Demo Issuer",
+      "reward_rules": [
+        {
+          "category": "groceries",
+          "cashback_rate": 5,
+          "spending_cap": 500,
+          "amount_spent": 480,
+          "fallback_rate": 1
+        },
+        {
+          "category": "all",
+          "cashback_rate": 1,
+          "spending_cap": null,
+          "amount_spent": 0,
+          "fallback_rate": 1
+        }
+      ]
+    },
+    {
+      "card_id": "card_b",
+      "card_name": "GroceryPlus",
+      "issuer": "Demo Issuer",
+      "reward_rules": [
+        {
+          "category": "groceries",
+          "cashback_rate": 3,
+          "spending_cap": null,
+          "amount_spent": 0,
+          "fallback_rate": 1
+        },
+        {
+          "category": "all",
+          "cashback_rate": 1,
+          "spending_cap": null,
+          "amount_spent": 0,
+          "fallback_rate": 1
+        }
+      ]
+    },
+    {
+      "card_id": "card_c",
+      "card_name": "Everyday2",
+      "issuer": "Demo Issuer",
+      "reward_rules": [
+        {
+          "category": "all",
+          "cashback_rate": 2,
+          "spending_cap": null,
+          "amount_spent": 0,
+          "fallback_rate": 2
+        }
+      ]
+    }
+  ]
+}
