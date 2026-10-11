@@ -68,12 +68,16 @@ def explain_purchase(purchase: PurchaseRequest) -> str:
     purchase_json = purchase.model_dump_json()
 
     prompt = (
-        "Use the compare_credit_cards tool on the exact "
-        "purchase JSON below. Then explain the best "
-        "card and why the other cards ranked lower. "
-        "Do not change the input data.\n\n"
-        f"{purchase_json}"
-    )
+    "Use the compare_credit_cards tool exactly once on the "
+    "purchase JSON below. "
+    "Explain the recommended card in no more than 80 words. "
+    "State the winner, its cashback amount, and briefly "
+    "explain why the alternatives earn less. "
+    "Mention spending caps when relevant. "
+    "Avoid Markdown headings and long lists. "
+    "Never modify the input values.\n\n"
+    f"{purchase_json}"
+)
 
     result = agent(prompt)
     return str(result)
